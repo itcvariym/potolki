@@ -22,14 +22,18 @@
   // Данные фирмы
   // Город необязателен: пустой city нигде не выводится
   const city = S.city ? `${S.city}, ` : "";
-  document.title = `${S.name} — ${S.tagline}${S.city ? ` в городе ${S.city}` : ""}`;
+  const isWorks = !!$("#works-list");
+  document.title = isWorks
+    ? `Работы и отзывы — ${S.name}`
+    : `${S.name} — ${S.tagline}${S.city ? ` в городе ${S.city}` : ""}`;
   $("#logo-name").textContent = S.name;
-  $("#hero-city").textContent = S.city ? `${S.city} / замер в день обращения` : "Замер в день обращения";
+  if ($("#hero-city")) $("#hero-city").textContent = S.city ? `${S.city} / замер в день обращения` : "Замер в день обращения";
   $("#top-phone-label").textContent = S.phone;
   $("#top-phone").href = tel;
   $("#dock-call").href = tel;
 
-  $("#types").innerHTML = S.types.map((t) => `
+  // Блоки главной страницы; на works.html их нет
+  if ($("#types")) $("#types").innerHTML = S.types.map((t) => `
     <article class="glass type rise" data-id="${t.id}">
       <div class="type__photo"><img src="assets/types/${t.id}.jpg" alt="${plain(t.name)}" loading="lazy"></div>
       <div class="type__body">
@@ -43,7 +47,7 @@
       </div>
     </article>`).join("");
 
-  $("#services-list").innerHTML = S.services.map((t) => `
+  if ($("#services-list")) $("#services-list").innerHTML = S.services.map((t) => `
     <li class="glass service rise">
       <span class="service__ico"><svg viewBox="0 0 24 24">${icons[t.id] || ""}</svg></span>
       <h3>${t.name}</h3>
@@ -52,18 +56,42 @@
       <button class="service__go" data-order="${t.id}">Оставить заявку ${arrow}</button>
     </li>`).join("");
 
-  $("#promos-list").innerHTML = S.promos.map((p) => `
+  if ($("#promos-list")) $("#promos-list").innerHTML = S.promos.map((p) => `
     <article class="glass promo rise">
       <span class="promo__n">${p.n}</span>
       <h3>${p.title}</h3>
       <p>${p.text}</p>
     </article>`).join("");
 
-  $("#faq-list").innerHTML = S.faq.map((f) => `
+  if ($("#faq-list")) $("#faq-list").innerHTML = S.faq.map((f) => `
     <div class="glass q rise">
       <button class="q__btn" aria-expanded="false"><span>${f.q}</span><span class="q__plus"></span></button>
       <div class="q__a"><p>${f.a}</p></div>
     </div>`).join("");
+
+  // Вторая страница: работы и отзывы. Пока данных нет — карточки-заготовки
+  const camera = '<svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  const quote = '<svg viewBox="0 0 24 24"><path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/></svg>';
+  if (isWorks) {
+    const works = S.works || [], reviews = S.reviews || [];
+    $("#works-list").innerHTML = works.length
+      ? works.map((w) => `
+        <figure class="glass work rise">
+          <div class="work__photo"><img src="${w.photo}" alt="${plain(w.title || "")}" loading="lazy"></div>
+          <figcaption><h3>${w.title || ""}</h3>${w.meta ? `<span>${w.meta}</span>` : ""}</figcaption>
+        </figure>`).join("")
+      : Array.from({ length: 6 }, () => `
+        <div class="work work--empty rise"><span class="empty__ico">${camera}</span><span>Здесь будет фото работы</span></div>`).join("");
+    $("#reviews-list").innerHTML = reviews.length
+      ? reviews.map((r) => `
+        <article class="glass review rise">
+          <span class="review__stars" aria-label="Оценка ${r.stars || 5} из 5">${"★".repeat(r.stars || 5)}</span>
+          <p>${r.text}</p>
+          <footer><b>${r.name}</b>${r.date ? `<span>${r.date}</span>` : ""}</footer>
+        </article>`).join("")
+      : Array.from({ length: 3 }, () => `
+        <div class="review review--empty rise"><span class="empty__ico">${quote}</span><span>Здесь будет отзыв клиента</span></div>`).join("");
+  }
 
   $("#contacts-info").innerHTML = `
     <span class="label">Контакты</span>
@@ -105,12 +133,12 @@
   $$(".nav a").forEach((a) => a.addEventListener("click", () => top.classList.remove("is-menu")));
 
   // При прокрутке первого экрана фото отъезжает, а тёплый свет снизу разгорается
-  const hero = $(".hero");
+  const hero = $(".hero");  // только на главной
   let ticking = false;
   const onScroll = () => {
     ticking = false;
     const p = Math.min(1, Math.max(0, scrollY / innerHeight));
-    hero.style.setProperty("--p", p.toFixed(3));
+    if (hero) hero.style.setProperty("--p", p.toFixed(3));
     top.classList.toggle("is-scrolled", scrollY > 40);
     document.body.classList.toggle("is-past", scrollY > innerHeight * 0.8);
   };
@@ -149,7 +177,7 @@
       }
       if (el.dataset.d) return;
       el.style.setProperty("--d", `${t}ms`);
-      t += el.matches(".type, .service, .promo, .q, .tile, .step") ? 50 : 100;
+      t += el.matches(".type, .service, .promo, .q, .step, .work, .review") ? 50 : 100;
     });
   });
   const io = new IntersectionObserver((entries) => {
@@ -160,7 +188,7 @@
     });
   }, { threshold: 0.12 });
   $$(".reveal").forEach((s) => io.observe(s));
-  const start = () => hero.classList.add("is-in");
+  const start = () => hero && hero.classList.add("is-in");
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(start));
   setTimeout(start, 1500);
 
