@@ -98,8 +98,8 @@
     <a href="${tel}">${S.phone}</a>
     <span>${city}${S.address}</span>
     <span>${S.hours}</span>
-    <a href="https://wa.me/${S.whatsapp}">Написать в&nbsp;WhatsApp</a>
-    <a href="${S.vk}">Группа ВКонтакте</a>`;
+    ${S.whatsapp ? `<a href="https://wa.me/${S.whatsapp}">Написать в&nbsp;WhatsApp</a>` : ""}
+    ${S.vk ? `<a href="${S.vk}">Группа ВКонтакте</a>` : ""}`;
   $("#foot-name").textContent = S.name;
   $("#foot-year").textContent = `${S.name} / ${S.tagline} / ${S.city ? `${S.city} / ` : ""}${new Date().getFullYear()}`;
 
@@ -252,9 +252,16 @@
   };
 
   // Сумма «докручивается» до нового значения
+  // На телефоне сумма меняется сразу: покадровая перерисовка над размытым фоном дёргает экран
   let shown = 0, anim;
+  const instant = matchMedia("(max-width: 720px), (hover: none), (prefers-reduced-motion: reduce)");
   const countTo = (to) => {
     cancelAnimationFrame(anim);
+    if (instant.matches) {
+      shown = to;
+      $("#sum").textContent = $("#mini-sum").textContent = (picked() ? "от " : "") + rub(to);
+      return;
+    }
     const from = shown, t0 = performance.now();
     const tick = (now) => {
       const k = Math.min(1, (now - t0) / 700);
